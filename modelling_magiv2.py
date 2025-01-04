@@ -1,7 +1,8 @@
-from transformers import PreTrainedModel, VisionEncoderDecoderModel, ViTMAEModel, ConditionalDetrModel, ConditionalDetrConfig
+from transformers import PreTrainedModel, VisionEncoderDecoderModel, ViTMAEModel, ConditionalDetrModel, ConditionalDetrConfig ##add 
 from transformers.models.conditional_detr.modeling_conditional_detr import (
     ConditionalDetrMLPPredictionHead, 
     ConditionalDetrModelOutput,
+    ## delete 
     inverse_sigmoid,
 )
 from configuration_magiv2 import Magiv2Config
@@ -57,7 +58,7 @@ class Magiv2Model(PreTrainedModel):
             self.is_this_text_a_dialogue = nn.Linear(
                 config.detection_model_config.d_model, 1
             )
-            self.matcher = ConditionalDetrModel(ConditionalDetrConfig(
+            self.matcher = ConditionalDetrModel(ConditionalDetrConfig( ##modify
                 class_cost=config.detection_model_config.class_cost,
                 bbox_cost=config.detection_model_config.bbox_cost,
                 giou_cost=config.detection_model_config.giou_cost
