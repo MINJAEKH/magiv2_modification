@@ -79,7 +79,7 @@ class Magiv2Model(PreTrainedModel):
         offset_characters = 0
         for result in per_page_results :
             result['character_names'] = assigned_character_names[offset_characters:offset_characters + len(result["characters"])]
-            offset_characters += len(result['chracters'])
+            offset_characters += len(result['characters'])
             
         return per_page_results
         
