@@ -93,9 +93,7 @@ def visualise_single_image_prediction(image_as_np_array, predictions, filename):
     figure, subplot = plt.subplots(1, 1, figsize=(10, 10))
     subplot.imshow(image_as_np_array)
     plot_bboxes(subplot, predictions["panels"], color="green")
-    plot_bboxes(subplot, predictions["texts"], color="red", visibility=predictions["is_essential_text"])
     plot_bboxes(subplot, predictions["characters"], color="blue")
-    plot_bboxes(subplot, predictions["tails"], color="purple")
 
     for i, name in enumerate(predictions["character_names"]):
         char_bbox = predictions["characters"][i]
@@ -144,26 +142,6 @@ def visualise_single_image_prediction(image_as_np_array, predictions, filename):
             y2 = bbox_j[1] + (bbox_j[3] - bbox_j[1]) / 2
             subplot.plot([x1, x2], [y1, y2], color=random_colour, linewidth=2)
             subplot.plot([x2], [y2], color=random_colour, marker="o", markersize=5)
-    
-    for (i, j) in predictions["text_character_associations"]:
-        bbox_i = predictions["texts"][i]
-        bbox_j = predictions["characters"][j]
-        if not predictions["is_essential_text"][i]:
-            continue
-        x1 = bbox_i[0] + (bbox_i[2] - bbox_i[0]) / 2
-        y1 = bbox_i[1] + (bbox_i[3] - bbox_i[1]) / 2
-        x2 = bbox_j[0] + (bbox_j[2] - bbox_j[0]) / 2
-        y2 = bbox_j[1] + (bbox_j[3] - bbox_j[1]) / 2
-        subplot.plot([x1, x2], [y1, y2], color="red", linewidth=2, linestyle="dashed")
-    
-    for (i, j) in predictions["text_tail_associations"]:
-        bbox_i = predictions["texts"][i]
-        bbox_j = predictions["tails"][j]
-        x1 = bbox_i[0] + (bbox_i[2] - bbox_i[0]) / 2
-        y1 = bbox_i[1] + (bbox_i[3] - bbox_i[1]) / 2
-        x2 = bbox_j[0] + (bbox_j[2] - bbox_j[0]) / 2
-        y2 = bbox_j[1] + (bbox_j[3] - bbox_j[1]) / 2
-        subplot.plot([x1, x2], [y1, y2], color="purple", linewidth=2, linestyle="dashed")
 
     subplot.axis("off")
     if filename is not None:
@@ -332,68 +310,6 @@ def merge_overlapping_ranges(ranges):
             prev_x2 = max(prev_x2, x2)
     merged_ranges.append((prev_x1, prev_x2))
     return merged_ranges
-
-def sort_text_boxes_in_reading_order(text_bboxes, sorted_panel_bboxes):
-    text_bboxes = convert_to_list_of_lists(text_bboxes)
-    sorted_panel_bboxes = convert_to_list_of_lists(sorted_panel_bboxes)
-
-    if len(text_bboxes) == 0:
-        return []
-
-    def indices_of_same_elements(nums):
-        groups = groupby(range(len(nums)), key=lambda i: nums[i])
-        return [list(indices) for _, indices in groups]
-
-    panel_id_for_text = get_text_to_panel_mapping(text_bboxes, sorted_panel_bboxes)
-    indices_of_texts = list(range(len(text_bboxes)))
-    indices_of_texts, panel_id_for_text = zip(*sorted(zip(indices_of_texts, panel_id_for_text), key=lambda x: x[1]))
-    indices_of_texts = list(indices_of_texts)
-    grouped_indices = indices_of_same_elements(panel_id_for_text)
-    for group in grouped_indices:
-        subset_of_text_indices = [indices_of_texts[i] for i in group]
-        text_bboxes_of_subset = [text_bboxes[i] for i in subset_of_text_indices]
-        sorted_subset_indices = sort_texts_within_panel(text_bboxes_of_subset)
-        indices_of_texts[group[0] : group[-1] + 1] = [subset_of_text_indices[i] for i in sorted_subset_indices]
-    return indices_of_texts
-
-def get_text_to_panel_mapping(text_bboxes, sorted_panel_bboxes):
-    text_to_panel_mapping = []
-    for text_bbox in text_bboxes:
-        shapely_text_polygon = box(*text_bbox)
-        all_intersections = []
-        all_distances = []
-        if len(sorted_panel_bboxes) == 0:
-            text_to_panel_mapping.append(-1)
-            continue
-        for j, annotation in enumerate(sorted_panel_bboxes):
-            shapely_annotation_polygon = box(*annotation)
-            if shapely_text_polygon.intersects(shapely_annotation_polygon):
-                all_intersections.append((shapely_text_polygon.intersection(shapely_annotation_polygon).area, j))
-            all_distances.append((shapely_text_polygon.distance(shapely_annotation_polygon), j))
-        if len(all_intersections) == 0:
-            text_to_panel_mapping.append(min(all_distances, key=lambda x: x[0])[1])
-        else:
-            text_to_panel_mapping.append(max(all_intersections, key=lambda x: x[0])[1])
-    return text_to_panel_mapping
-
-def sort_texts_within_panel(rects):
-    smallest_y = float("inf")
-    greatest_x = float("-inf")
-    for i, rect in enumerate(rects):
-        x1, y1, x2, y2 = rect
-        smallest_y = min(smallest_y, y1)
-        greatest_x = max(greatest_x, x2)
-    
-    reference_point = Point(greatest_x, smallest_y)
-
-    polygons_and_index = []
-    for i, rect in enumerate(rects):
-        x1, y1, x2, y2 = rect
-        polygons_and_index.append((box(x1,y1,x2,y2), i))
-    # sort points by closest to reference point
-    polygons_and_index = sorted(polygons_and_index, key=lambda x: reference_point.distance(x[0]))
-    indices = [x[1] for x in polygons_and_index]
-    return indices
 
 def x1y1wh_to_x1y1x2y2(bbox):
     x1, y1, w, h = bbox

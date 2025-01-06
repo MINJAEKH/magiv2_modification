@@ -27,19 +27,11 @@ class Magiv2Processor():
         annotations = self._convert_annotations_to_coco_format(annotations)
         inputs = self.detection_image_preprocessor(images, annotations=annotations, return_tensors="pt")
         return inputs
-
-    def preprocess_inputs_for_ocr(self, images):
-        images = list(images)
-        assert isinstance(images[0], np.ndarray)
-        return self.ocr_preprocessor(images, return_tensors="pt").pixel_values
-    
+ 
     def preprocess_inputs_for_crop_embeddings(self, images):
         images = list(images)
         assert isinstance(images[0], np.ndarray)
         return self.crop_embedding_image_preprocessor(images, return_tensors="pt").pixel_values
-    
-    def postprocess_ocr_tokens(self, generated_ids, skip_special_tokens=True):
-        return self.ocr_preprocessor.batch_decode(generated_ids, skip_special_tokens=skip_special_tokens)
     
     def crop_image(self, image, bboxes):
         crops_for_image = []
@@ -99,58 +91,6 @@ class Magiv2Processor():
             indices_of_panels_to_keep.append([p[3].item() for p in panels_to_keep])
         return indices_of_panels_to_keep
     
-    def _get_indices_of_texts_to_keep(self, batch_scores, batch_labels, batch_bboxes, text_detection_threshold):
-        indices_of_texts_to_keep = []
-        for scores, labels, bboxes in zip(batch_scores, batch_labels, batch_bboxes):
-            indices = torch.where((labels == 1) & (scores > text_detection_threshold))[0]
-            bboxes = bboxes[indices]
-            scores = scores[indices]
-            labels = labels[indices]
-            if len(indices) == 0:
-                indices_of_texts_to_keep.append([])
-                continue
-            scores, labels, indices, bboxes  = zip(*sorted(zip(scores, labels, indices, bboxes), reverse=True))
-            texts_to_keep = []
-            texts_to_keep_as_shapely_objects = []
-            for ts, tb, tl, ti in zip(scores, bboxes, labels, indices):
-                text_polygon = box(tb[0], tb[1], tb[2], tb[3])
-                should_append = True
-                for t in texts_to_keep_as_shapely_objects:
-                    if t.intersection(text_polygon).area / t.union(text_polygon).area > 0.5:
-                        should_append = False
-                        break
-                if should_append:
-                    texts_to_keep.append((ts, tl, tb, ti))
-                    texts_to_keep_as_shapely_objects.append(text_polygon)
-            indices_of_texts_to_keep.append([t[3].item() for t in texts_to_keep])
-        return indices_of_texts_to_keep
-    
-    def _get_indices_of_tails_to_keep(self, batch_scores, batch_labels, batch_bboxes, text_detection_threshold):
-        indices_of_texts_to_keep = []
-        for scores, labels, bboxes in zip(batch_scores, batch_labels, batch_bboxes):
-            indices = torch.where((labels == 3) & (scores > text_detection_threshold))[0]
-            bboxes = bboxes[indices]
-            scores = scores[indices]
-            labels = labels[indices]
-            if len(indices) == 0:
-                indices_of_texts_to_keep.append([])
-                continue
-            scores, labels, indices, bboxes  = zip(*sorted(zip(scores, labels, indices, bboxes), reverse=True))
-            texts_to_keep = []
-            texts_to_keep_as_shapely_objects = []
-            for ts, tb, tl, ti in zip(scores, bboxes, labels, indices):
-                text_polygon = box(tb[0], tb[1], tb[2], tb[3])
-                should_append = True
-                for t in texts_to_keep_as_shapely_objects:
-                    if t.intersection(text_polygon).area / t.union(text_polygon).area > 0.5:
-                        should_append = False
-                        break
-                if should_append:
-                    texts_to_keep.append((ts, tl, tb, ti))
-                    texts_to_keep_as_shapely_objects.append(text_polygon)
-            indices_of_texts_to_keep.append([t[3].item() for t in texts_to_keep])
-        return indices_of_texts_to_keep
-        
     def _convert_annotations_to_coco_format(self, annotations):
         if annotations is None:
             return None
