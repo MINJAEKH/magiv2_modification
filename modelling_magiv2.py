@@ -207,7 +207,7 @@ class Magiv2Model(PreTrainedModel):
 
             character_bboxes = batch_bboxes[batch_index][character_indices]
             panel_bboxes = batch_bboxes[batch_index][panel_indices]
-            character_scores = batch_scores[batch_index][character_indices] 📌 추가 
+            character_scores = batch_scores[batch_index][character_indices] # 📌 추가 
             
             local_sorted_panel_indices = sort_panels(panel_bboxes)
             panel_bboxes = panel_bboxes[local_sorted_panel_indices]
@@ -416,4 +416,5 @@ class Magiv2Model(PreTrainedModel):
                 character_character_affinities = character_character_affinities.sigmoid()
             affinity_matrices.append(character_character_affinities)
         return affinity_matrices
+
 
