@@ -166,15 +166,15 @@ class Magiv2Model(PreTrainedModel):
         # print('sofmax:',predicted_class_scores.softmax(dim=-1).max(dim=-1))
         original_image_sizes = torch.stack([torch.tensor(img.shape[:2]) for img in images], dim=0).to(predicted_bboxes.device)
         
-        batch_scores, batch_labels = predicted_class_scores.max(-1)
-        batch_scores = batch_scores.sigmoid()
-        batch_labels = batch_labels.long()
-        print(f"batch_scores, batch_labels : {batch_scores}, {batch_labels}")
-        print('sofmax:',predicted_class_scores.softmax(dim=-1).max(dim=-1))
+        # batch_scores, batch_labels = predicted_class_scores.max(-1)
+        # batch_scores = batch_scores.sigmoid()
+        # batch_labels = batch_labels.long()
+        # print(f"batch_scores, batch_labels : {batch_scores}, {batch_labels}")
+        # print('sofmax:',predicted_class_scores.softmax(dim=-1).max(dim=-1))
             
-        # # Softmax로 class 확률 계산 📌 추가 
-        # predicted_class_probs = predicted_class_scores.softmax(dim=-1)
-        # batch_probs, batch_labels = predicted_class_probs.max(dim=-1)
+        # Softmax로 class 확률 계산 📌 추가 
+        predicted_class_probs = predicted_class_scores.softmax(dim=-1)
+        batch_scores, batch_labels = predicted_class_probs.max(dim=-1)
         # batch_scores = batch_probs  # 이것이 confidence score
 
             
@@ -210,7 +210,8 @@ class Magiv2Model(PreTrainedModel):
 
             character_bboxes = batch_bboxes[batch_index][character_indices]
             panel_bboxes = batch_bboxes[batch_index][panel_indices]
-            # character_scores = batch_scores[batch_index][character_indices] # 📌 추가 
+            character_scores = batch_scores[batch_index][character_indices] # 📌 추가 
+            print(f"character_scores : {character_scores}")
             
             local_sorted_panel_indices = sort_panels(panel_bboxes)
             panel_bboxes = panel_bboxes[local_sorted_panel_indices]
@@ -419,6 +420,7 @@ class Magiv2Model(PreTrainedModel):
                 character_character_affinities = character_character_affinities.sigmoid()
             affinity_matrices.append(character_character_affinities)
         return affinity_matrices
+
 
 
 
