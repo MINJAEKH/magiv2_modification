@@ -212,9 +212,9 @@ class Magiv2Model(PreTrainedModel):
             character_bboxes = batch_bboxes[batch_index][character_indices]
             panel_bboxes = batch_bboxes[batch_index][panel_indices]
             character_scores = display_scores_all[batch_index][character_indices] # 📌 추가 
-            print("character_scores")
-            print(len(character_scores), character_scores)
-            # print(f"character_scores : {character_scores}")
+            # print("character_scores")
+            # print(len(character_scores), character_scores)
+            # # print(f"character_scores : {character_scores}")
             
             local_sorted_panel_indices = sort_panels(panel_bboxes)
             panel_bboxes = panel_bboxes[local_sorted_panel_indices]
@@ -224,8 +224,8 @@ class Magiv2Model(PreTrainedModel):
             character_cluster_labels = UnionFind.from_adj_matrix(
                 character_character_matching_scores > character_character_matching_threshold
             ).get_labels_for_connected_components()
-            print("character_cluster_labels")
-            print(len(character_cluster_labels), character_cluster_labels)
+            # print("character_cluster_labels")
+            # print(len(character_cluster_labels), character_cluster_labels)
             # print(f"character_cluster_labels : {character_cluster_labels}")
             results.append({
                 "panels": panel_bboxes.tolist(),
@@ -425,6 +425,7 @@ class Magiv2Model(PreTrainedModel):
                 character_character_affinities = character_character_affinities.sigmoid()
             affinity_matrices.append(character_character_affinities)
         return affinity_matrices
+
 
 
 
