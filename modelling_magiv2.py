@@ -162,13 +162,15 @@ class Magiv2Model(PreTrainedModel):
         
         detection_transformer_output = self._get_detection_transformer_output(**inputs_to_detection_transformer)
         predicted_class_scores, predicted_bboxes = self._get_predicted_bboxes_and_classes(detection_transformer_output)
-        print('org:',predicted_class_scores.max(-1))
-        print('sofmax:',predicted_class_scores.softmax(dim=-1))
+        # print('org:',predicted_class_scores.max(-1))
+        # print('sofmax:',predicted_class_scores.softmax(dim=-1).max(dim=-1))
         original_image_sizes = torch.stack([torch.tensor(img.shape[:2]) for img in images], dim=0).to(predicted_bboxes.device)
         
         batch_scores, batch_labels = predicted_class_scores.max(-1)
         batch_scores = batch_scores.sigmoid()
         batch_labels = batch_labels.long()
+        print(f"batch_scores, batch_labels : {batch_scores}, {batch_labels}")
+        print('sofmax:',predicted_class_scores.softmax(dim=-1).max(dim=-1))
             
         # # Softmax로 class 확률 계산 📌 추가 
         # predicted_class_probs = predicted_class_scores.softmax(dim=-1)
@@ -417,6 +419,7 @@ class Magiv2Model(PreTrainedModel):
                 character_character_affinities = character_character_affinities.sigmoid()
             affinity_matrices.append(character_character_affinities)
         return affinity_matrices
+
 
 
 
