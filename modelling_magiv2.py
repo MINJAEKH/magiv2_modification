@@ -221,7 +221,7 @@ class Magiv2Model(PreTrainedModel):
             character_cluster_labels = UnionFind.from_adj_matrix(
                 character_character_matching_scores > character_character_matching_threshold
             ).get_labels_for_connected_components()
-
+            print(f"character_cluster_labels : {character_cluster_labels}")
             results.append({
                 "panels": panel_bboxes.tolist(),
                 "characters": character_bboxes.tolist(),
@@ -420,6 +420,7 @@ class Magiv2Model(PreTrainedModel):
                 character_character_affinities = character_character_affinities.sigmoid()
             affinity_matrices.append(character_character_affinities)
         return affinity_matrices
+
 
 
 
