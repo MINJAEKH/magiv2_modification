@@ -172,15 +172,7 @@ class Magiv2Model(PreTrainedModel):
         batch_scores, batch_labels = predicted_class_scores.max(-1)
         batch_scores = batch_scores.sigmoid()
         batch_labels = batch_labels.long()
-        print(f"org batch_scores, batch_labels : {len(batch_scores[0])}, {len(batch_labels[0])}")
-
-            
-        # Softmax로 class 확률 계산 📌 추가 
-        predicted_class_probs = predicted_class_scores.softmax(dim=-1)
-        batch_scores, batch_labels = predicted_class_probs.max(dim=-1)
-        print(f"softmax batch_scores, batch_labels : {len(batch_scores)}, {len(batch_labels)}")
-        print(f"softmax batch_scores, batch_labels : {len(batch_scores[0])}, {len(batch_labels[0])}")
-
+        # print(f"org batch_scores, batch_labels : {len(batch_scores[0])}, {len(batch_labels[0])}")
             
         batch_bboxes = center_to_corners_format(predicted_bboxes)
 
@@ -206,6 +198,11 @@ class Magiv2Model(PreTrainedModel):
             c2c_tokens_for_batch=predicted_c2c_tokens_for_batch,
             apply_sigmoid=True,
         )
+            
+         # Softmax로 class 확률 계산 📌 추가 
+        probs = predicted_class_scores.softmax(dim=-1)
+        display_scores_all = probs.gather(-1, batch_labels.unsqueeze(-1)).squeeze(-1)  # [B, Q]
+       
 
         results = []
         for batch_index in range(len(batch_scores)):
@@ -214,7 +211,9 @@ class Magiv2Model(PreTrainedModel):
 
             character_bboxes = batch_bboxes[batch_index][character_indices]
             panel_bboxes = batch_bboxes[batch_index][panel_indices]
-            character_scores = batch_scores[batch_index][character_indices] # 📌 추가 
+            character_scores = display_scores_all[batch_index][character_indices] # 📌 추가 
+            print("character_scores")
+            print(len(character_scores), character_scores)
             # print(f"character_scores : {character_scores}")
             
             local_sorted_panel_indices = sort_panels(panel_bboxes)
@@ -225,6 +224,8 @@ class Magiv2Model(PreTrainedModel):
             character_cluster_labels = UnionFind.from_adj_matrix(
                 character_character_matching_scores > character_character_matching_threshold
             ).get_labels_for_connected_components()
+            print("character_cluster_labels")
+            print(len(character_cluster_labels), character_cluster_labels)
             # print(f"character_cluster_labels : {character_cluster_labels}")
             results.append({
                 "panels": panel_bboxes.tolist(),
@@ -424,6 +425,7 @@ class Magiv2Model(PreTrainedModel):
                 character_character_affinities = character_character_affinities.sigmoid()
             affinity_matrices.append(character_character_affinities)
         return affinity_matrices
+
 
 
 
